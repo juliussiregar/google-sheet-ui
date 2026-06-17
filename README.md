@@ -14,14 +14,12 @@ Ubah Google Sheet menjadi dashboard interaktif — gratis (kecuali OpenAI untuk 
 
 ```bash
 npm install
-cp .env.example .env.local
-# Edit .env.local — masukkan OPENAI_API_KEY Anda
 npm run dev
 ```
 
 Buka [http://localhost:3000](http://localhost:3000)
 
-> Dashboard & grafik berjalan tanpa API key. Fitur **AI Chat** membutuhkan `OPENAI_API_KEY`.
+> OpenAI API key sudah dikonfigurasi di server. Tidak perlu file `.env` untuk menjalankan aplikasi.
 
 ## Syarat Google Sheet
 
@@ -44,20 +42,11 @@ git push -u origin main
 1. Buka [vercel.com/new](https://vercel.com/new)
 2. Import repository GitHub Anda
 3. Framework: **Next.js** (otomatis terdeteksi)
-4. Tambahkan **Environment Variables**:
+4. Klik **Deploy** — tidak perlu environment variables
 
-| Name | Value |
-|------|-------|
-| `OPENAI_API_KEY` | API key OpenAI Anda |
-| `OPENAI_MODEL` | `gpt-4o-mini` *(opsional)* |
+Aplikasi live di: **https://google-sheet-tampilan.vercel.app**
 
-5. Klik **Deploy**
-
-### Keamanan
-
-- **Jangan** hardcode API key di source code
-- **Jangan** commit file `.env` atau `.env.local`
-- Simpan API key hanya di Vercel Environment Variables atau `.env.local` lokal
+> **Keamanan:** API key ada di source code. Gunakan **private repository** atau rotate key jika repo pernah public.
 
 ## Tech Stack
 

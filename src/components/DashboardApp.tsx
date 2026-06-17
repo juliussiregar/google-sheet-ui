@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   RefreshCw,
   ExternalLink,
-  ChevronDown,
-  ChevronUp,
   Menu,
   X,
 } from "lucide-react";
@@ -28,9 +27,20 @@ import { HeroChart } from "./HeroChart";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { LandingFeatures } from "./LandingFeatures";
 import { SectionHeader } from "./SectionHeader";
+import { SavedSheetsMenu } from "./SavedSheetsMenu";
+import {
+  getLastUrl,
+  setLastUrl as persistLastUrl,
+  syncSheetToUrl,
+  touchSavedSheet,
+  truncateUrl,
+} from "@/lib/sheet-storage";
 import { cn } from "@/lib/utils";
 
 export function DashboardApp() {
+  const searchParams = useSearchParams();
+  const initRef = useRef(false);
+
   const [sheetData, setSheetData] = useState<SheetData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,13 +48,15 @@ export function DashboardApp() {
   const [filters, setFilters] = useState<Filters>({});
   const [lastUrl, setLastUrl] = useState("");
   const [heroCollapsed, setHeroCollapsed] = useState(true);
+  const [showLinkEditor, setShowLinkEditor] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
 
-  const loadSheet = async (url: string) => {
+  const loadSheet = useCallback(async (url: string) => {
     setLoading(true);
     setError(null);
     setLastUrl(url);
     setFilters({});
+    setShowLinkEditor(false);
 
     try {
       const res = await fetch("/api/sheet", {
@@ -58,12 +70,27 @@ export function DashboardApp() {
       setSheetData(json);
       setActiveView("overview");
       setHeroCollapsed(true);
+      persistLastUrl(url);
+      syncSheetToUrl(url);
+      touchSavedSheet(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    const fromParam = searchParams.get("sheet");
+    const url = fromParam || getLastUrl();
+    if (url) {
+      setLastUrl(url);
+      loadSheet(url);
+    }
+  }, [searchParams, loadSheet]);
 
   const displayData = useMemo(() => {
     if (!sheetData) return null;
@@ -201,8 +228,8 @@ export function DashboardApp() {
       {/* Landing hero — collapses when data loaded */}
       <section
         className={cn(
-          "relative overflow-hidden border-b border-white/10 transition-all duration-500",
-          sheetData && heroCollapsed ? "hidden" : "block"
+          "relative border-b border-white/10 transition-all duration-500",
+          sheetData && heroCollapsed && !showLinkEditor ? "hidden" : "block"
         )}
       >
         <div className="pointer-events-none absolute inset-0">
@@ -227,8 +254,9 @@ export function DashboardApp() {
               </span>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm text-slate-400 sm:text-base">
-              Paste link, dapatkan multi-view dashboard dengan grafik otomatis, filter
-              real-time, dan AI assistant.
+              {showLinkEditor
+                ? "Masukkan link baru atau pilih dari link tersimpan."
+                : "Paste link, dapatkan multi-view dashboard. Link otomatis tersimpan di browser & URL."}
             </p>
           </div>
 
@@ -236,9 +264,33 @@ export function DashboardApp() {
             <LinkInput onSubmit={loadSheet} loading={loading} initialUrl={lastUrl} />
           </div>
 
+          {sheetData && showLinkEditor && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowLinkEditor(false)}
+                className="text-xs text-slate-500 hover:text-white"
+              >
+                ← Kembali ke dashboard
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="mx-auto mt-4 max-w-3xl rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
               {error}
+            </div>
+          )}
+
+          {!sheetData && (
+            <div className="mt-6 flex justify-center">
+              <SavedSheetsMenu
+                currentUrl={lastUrl || undefined}
+                onSelect={loadSheet}
+                onChangeLink={() => {
+                  document.getElementById("sheet-link-input")?.focus();
+                }}
+              />
             </div>
           )}
         </div>
@@ -246,7 +298,7 @@ export function DashboardApp() {
 
       {/* Compact header when data loaded */}
       {sheetData && (
-        <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-50 overflow-visible border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
           <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
             <div className="flex items-center gap-3">
               <button
@@ -255,27 +307,24 @@ export function DashboardApp() {
               >
                 {mobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-white">SheetVision</p>
-                <p className="text-[10px] text-slate-500">
+                <p className="truncate text-[10px] text-slate-500" title={lastUrl}>
                   {displayData?.rows.length ?? 0} baris
-                  {Object.values(filters).filter(Boolean).length > 0 && " (filtered)"}
+                  {lastUrl && ` · ${truncateUrl(lastUrl, 28)}`}
                 </p>
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-1 max-w-lg">
-              <LinkInput onSubmit={loadSheet} loading={loading} initialUrl={lastUrl} compact />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setHeroCollapsed(!heroCollapsed)}
-                className="hidden rounded-lg border border-white/10 p-2 text-slate-400 hover:bg-white/10 hover:text-white sm:block"
-                title={heroCollapsed ? "Tampilkan hero" : "Sembunyikan hero"}
-              >
-                {heroCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <SavedSheetsMenu
+                currentUrl={lastUrl}
+                onSelect={loadSheet}
+                onChangeLink={() => {
+                  setShowLinkEditor(true);
+                  setHeroCollapsed(false);
+                }}
+              />
               <button
                 onClick={() => loadSheet(lastUrl)}
                 disabled={loading}
@@ -309,7 +358,7 @@ export function DashboardApp() {
         </div>
       )}
 
-      {sheetData && displayData && !loading && (
+      {sheetData && displayData && !loading && !showLinkEditor && (
         <div className="flex min-h-[calc(100vh-4rem)]">
           {/* Desktop sidebar */}
           <Sidebar

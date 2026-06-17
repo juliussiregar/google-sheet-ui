@@ -59,6 +59,7 @@ export function LinkInput({ onSubmit, loading, initialUrl = "", compact }: LinkI
           <div className="flex flex-1 items-center gap-3 px-3">
             <Link2 className="h-5 w-5 shrink-0 text-indigo-400" />
             <input
+              id="sheet-link-input"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}

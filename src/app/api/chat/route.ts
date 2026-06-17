@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   try {
     const config = getOpenAIConfig();
     if (!config) {
-      return NextResponse.json({ error: getOpenAIConfigError() }, { status: 503 });
+      return NextResponse.json({ error: getOpenAIConfigError() }, { status: 500 });
     }
 
     const body = await request.json();
