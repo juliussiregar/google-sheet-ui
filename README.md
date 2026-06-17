@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SheetVision
 
-## Getting Started
+Ubah Google Sheet menjadi dashboard interaktif — gratis (kecuali OpenAI untuk fitur chat).
 
-First, run the development server:
+## Fitur
+
+- Paste link Google Sheet → dashboard otomatis
+- Multi-view: Overview, Grafik, Insights, Tabel, Kolom, AI Chat
+- KPI cards, pie/donut/bar/area/radial charts
+- Filter real-time & export CSV
+- AI Chat (OpenAI) untuk analisis data & saran visualisasi
+
+## Setup Lokal
 
 ```bash
+npm install
+cp .env.example .env.local
+# Edit .env.local — masukkan OPENAI_API_KEY Anda
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> Dashboard & grafik berjalan tanpa API key. Fitur **AI Chat** membutuhkan `OPENAI_API_KEY`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Syarat Google Sheet
 
-## Learn More
+Sheet harus di-share sebagai **"Anyone with the link can view"** agar data bisa diambil tanpa OAuth.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy ke Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 1. Push ke GitHub
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+git add .
+git commit -m "feat: SheetVision dashboard siap deploy"
+git branch -M main
+git remote add origin https://github.com/USERNAME/google-sheet-tampilan.git
+git push -u origin main
+```
 
-## Deploy on Vercel
+### 2. Import & Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Buka [vercel.com/new](https://vercel.com/new)
+2. Import repository GitHub Anda
+3. Framework: **Next.js** (otomatis terdeteksi)
+4. Tambahkan **Environment Variables**:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Name | Value |
+|------|-------|
+| `OPENAI_API_KEY` | API key OpenAI Anda |
+| `OPENAI_MODEL` | `gpt-4o-mini` *(opsional)* |
+
+5. Klik **Deploy**
+
+### Keamanan
+
+- **Jangan** hardcode API key di source code
+- **Jangan** commit file `.env` atau `.env.local`
+- Simpan API key hanya di Vercel Environment Variables atau `.env.local` lokal
+
+## Tech Stack
+
+- Next.js 16 + React + TypeScript
+- Tailwind CSS
+- Recharts
+- Papa Parse
+- OpenAI API
